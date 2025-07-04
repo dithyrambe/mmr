@@ -3,11 +3,12 @@ mod models;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use git_version::git_version;
 
 use client::MlflowClient;
 
 #[derive(Parser)]
-#[command(version, about, long_about = None)]
+#[command(version = git_version!(args = ["--tags", "--dirty=-modified"]), about, long_about = None)]
 struct Args {
     #[command(subcommand)]
     cmd: Commands,
