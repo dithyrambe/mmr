@@ -13,6 +13,11 @@ pub struct ModelVersionSearchResult {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct ModelVersionByAliasResult {
+    pub model_version: ModelVersion,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct RegisteredModel {
     pub name: String,
 }

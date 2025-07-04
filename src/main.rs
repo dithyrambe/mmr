@@ -25,6 +25,13 @@ enum Commands {
         #[arg()]
         model_name: String,
     },
+    #[command(about = "Get model version by alias")]
+    GetAlias {
+        #[arg()]
+        model_name: String,
+        #[arg(short, long, help = "Model alias")]
+        alias: String,
+    },
 }
 
 #[tokio::main]
@@ -41,6 +48,9 @@ async fn main() -> Result<()> {
     match args.cmd {
         Commands::ListModels { pattern } => client.list_models(&pattern).await?,
         Commands::ListVersions { model_name } => client.list_versions(&model_name).await?,
+        Commands::GetAlias { model_name, alias } => {
+            client.get_version_by_alias(&model_name, &alias).await?
+        }
     };
 
     Ok(())

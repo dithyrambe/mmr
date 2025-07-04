@@ -2,7 +2,8 @@ use anyhow::Result;
 use reqwest::Client;
 
 use crate::models::{
-    ModelVersion, ModelVersionSearchResult, RegisteredModel, RegisteredModelSearchResult,
+    ModelVersion, ModelVersionByAliasResult, ModelVersionSearchResult, RegisteredModel,
+    RegisteredModelSearchResult,
 };
 
 pub struct MlflowClient {
@@ -88,13 +89,36 @@ impl MlflowClient {
                     }
                 }
                 Err(_) => {
-                    println!("No model found with that pattern");
+                    println!("No version found for that model");
                     break;
                 }
             }
         }
         for version in versions.iter().rev() {
             println!("{}/{}\t{}", version.name, version.version, version.source);
+        }
+
+        Ok(())
+    }
+
+    pub async fn get_version_by_alias(&self, model_name: &str, alias: &str) -> Result<()> {
+        let url = format!(
+            "{}/api/2.0/mlflow/registered-models/alias",
+            self.tracking_uri
+        );
+
+        let query_params = vec![("name", &model_name), ("alias", &alias)];
+
+        let response = self.client.get(&url).query(&query_params).send().await?;
+
+        match response.json::<ModelVersionByAliasResult>().await {
+            Ok(result) => {
+                let version = result.model_version;
+                println!("{}/{}\t{}", version.name, version.version, version.source);
+            }
+            Err(_) => {
+                println!("No alias found for that model");
+            }
         }
 
         Ok(())
