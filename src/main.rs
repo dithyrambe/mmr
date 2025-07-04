@@ -7,7 +7,7 @@ use clap::{Parser, Subcommand};
 use client::MlflowClient;
 
 #[derive(Parser)]
-#[command(version, about, long_about = None)]
+#[command(version = env!("VERGEN_GIT_DESCRIBE"), about, long_about = None)]
 struct Args {
     #[command(subcommand)]
     cmd: Commands,
