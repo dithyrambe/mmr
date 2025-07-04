@@ -1,7 +1,7 @@
 use anyhow::Result;
 use reqwest::Client;
 
-use crate::RegisteredModelSearchResult;
+use crate::{RegisteredModelSearchResult, models::RegisteredModel};
 
 pub struct MlflowClient {
     pub tracking_uri: String,
@@ -29,21 +29,36 @@ impl MlflowClient {
             format!("%{pattern}%")
         };
 
-        let response = self
-            .client
-            .get(url)
-            .query(&[("filter", format!("name LIKE '{sql_pattern}'"))])
-            .send()
-            .await?;
+        let mut page_token: Option<String> = None;
+        let mut models: Vec<RegisteredModel> = Vec::new();
 
-        match response.json::<RegisteredModelSearchResult>().await {
-            Ok(models) => {
-                for model in models.registered_models {
-                    println!("{}", model.name);
+        loop {
+            let mut query_params = vec![("filter", format!("name LIKE '{sql_pattern}'"))];
+
+            if let Some(token) = &page_token {
+                query_params.push(("page_token", token.clone()));
+            }
+
+            let response = self.client.get(&url).query(&query_params).send().await?;
+
+            match response.json::<RegisteredModelSearchResult>().await {
+                Ok(result) => {
+                    models.extend(result.registered_models);
+                    page_token = result.next_page_token;
+                    if page_token.is_none() {
+                        break;
+                    }
+                }
+                Err(_) => {
+                    println!("No model found with that pattern");
+                    break;
                 }
             }
-            Err(_) => println!("No model found with that pattern"),
         }
+        for model in models {
+            println!("{}", model.name);
+        }
+
         Ok(())
     }
 }
