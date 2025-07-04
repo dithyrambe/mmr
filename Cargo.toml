@@ -1,5 +1,5 @@
 [package]
-name = "mlflow-registry"
+name = "mmr"
 version = "0.1.0"
 edition = "2024"
 
