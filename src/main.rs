@@ -17,7 +17,7 @@ struct Args {
 enum Commands {
     #[command(about = "List registered models")]
     ListModels {
-        #[arg()]
+        #[arg(default_value_t = String::from(""))]
         pattern: String,
     },
     #[command(about = "List model versions")]
