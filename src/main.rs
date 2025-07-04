@@ -5,7 +5,6 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 
 use client::MlflowClient;
-use models::RegisteredModelSearchResult;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -20,6 +19,11 @@ enum Commands {
     ListModels {
         #[arg()]
         pattern: String,
+    },
+    #[command(about = "List model versions")]
+    ListVersions {
+        #[arg()]
+        model_name: String,
     },
 }
 
@@ -36,6 +40,7 @@ async fn main() -> Result<()> {
 
     match args.cmd {
         Commands::ListModels { pattern } => client.list_models(&pattern).await?,
+        Commands::ListVersions { model_name } => client.list_versions(&model_name).await?,
     };
 
     Ok(())

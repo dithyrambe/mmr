@@ -1,7 +1,9 @@
 use anyhow::Result;
 use reqwest::Client;
 
-use crate::{RegisteredModelSearchResult, models::RegisteredModel};
+use crate::models::{
+    ModelVersion, ModelVersionSearchResult, RegisteredModel, RegisteredModelSearchResult,
+};
 
 pub struct MlflowClient {
     pub tracking_uri: String,
@@ -57,6 +59,42 @@ impl MlflowClient {
         }
         for model in models {
             println!("{}", model.name);
+        }
+
+        Ok(())
+    }
+
+    pub async fn list_versions(&self, model_name: &str) -> Result<()> {
+        let url = format!("{}/api/2.0/mlflow/model-versions/search", self.tracking_uri);
+
+        let mut page_token: Option<String> = None;
+        let mut versions: Vec<ModelVersion> = Vec::new();
+
+        loop {
+            let mut query_params = vec![("filter", format!("name='{model_name}'"))];
+
+            if let Some(token) = &page_token {
+                query_params.push(("page_token", token.clone()));
+            }
+
+            let response = self.client.get(&url).query(&query_params).send().await?;
+
+            match response.json::<ModelVersionSearchResult>().await {
+                Ok(result) => {
+                    versions.extend(result.model_versions);
+                    page_token = result.next_page_token;
+                    if page_token.is_none() {
+                        break;
+                    }
+                }
+                Err(_) => {
+                    println!("No model found with that pattern");
+                    break;
+                }
+            }
+        }
+        for version in versions.iter().rev() {
+            println!("{}/{}\t{}", version.name, version.version, version.source);
         }
 
         Ok(())
