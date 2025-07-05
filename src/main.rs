@@ -34,8 +34,7 @@ enum Commands {
     },
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     let args = Args::parse();
 
     let mlflow_tracking_uri = std::env::var("MLFLOW_TRACKING_URI")
@@ -46,10 +45,10 @@ async fn main() -> Result<()> {
     let client = MlflowClient::new(mlflow_tracking_uri);
 
     match args.cmd {
-        Commands::ListModels { pattern } => client.list_models(&pattern).await?,
-        Commands::ListVersions { model_name } => client.list_versions(&model_name).await?,
+        Commands::ListModels { pattern } => client.list_models(&pattern)?,
+        Commands::ListVersions { model_name } => client.list_versions(&model_name)?,
         Commands::GetAlias { model_name, alias } => {
-            client.get_version_by_alias(&model_name, &alias).await?
+            client.get_version_by_alias(&model_name, &alias)?
         }
     };
 

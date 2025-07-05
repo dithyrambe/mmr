@@ -1,5 +1,5 @@
 use anyhow::Result;
-use reqwest::Client;
+use ureq;
 
 use crate::models::{
     ModelVersion, ModelVersionByAliasResult, ModelVersionSearchResult, RegisteredModel,
@@ -8,20 +8,14 @@ use crate::models::{
 
 pub struct MlflowClient {
     pub tracking_uri: String,
-    pub client: Client,
 }
 
 impl MlflowClient {
     pub fn new(tracking_uri: String) -> Self {
-        let client = Client::new();
-
-        MlflowClient {
-            tracking_uri,
-            client,
-        }
+        MlflowClient { tracking_uri }
     }
 
-    pub async fn list_models(&self, pattern: &str) -> Result<()> {
+    pub fn list_models(&self, pattern: &str) -> Result<()> {
         let url = format!(
             "{}/api/2.0/mlflow/registered-models/search",
             self.tracking_uri
@@ -36,15 +30,17 @@ impl MlflowClient {
         let mut models: Vec<RegisteredModel> = Vec::new();
 
         loop {
-            let mut query_params = vec![("filter", format!("name LIKE '{sql_pattern}'"))];
-
+            let mut request_builder =
+                ureq::get(&url).query("filter", format!("name LIKE '{sql_pattern}'"));
             if let Some(token) = &page_token {
-                query_params.push(("page_token", token.clone()));
+                request_builder = request_builder.query("page_token", token);
             }
 
-            let response = self.client.get(&url).query(&query_params).send().await?;
-
-            match response.json::<RegisteredModelSearchResult>().await {
+            match request_builder
+                .call()?
+                .body_mut()
+                .read_json::<RegisteredModelSearchResult>()
+            {
                 Ok(result) => {
                     models.extend(result.registered_models);
                     page_token = result.next_page_token;
@@ -65,22 +61,24 @@ impl MlflowClient {
         Ok(())
     }
 
-    pub async fn list_versions(&self, model_name: &str) -> Result<()> {
+    pub fn list_versions(&self, model_name: &str) -> Result<()> {
         let url = format!("{}/api/2.0/mlflow/model-versions/search", self.tracking_uri);
 
         let mut page_token: Option<String> = None;
         let mut versions: Vec<ModelVersion> = Vec::new();
 
         loop {
-            let mut query_params = vec![("filter", format!("name='{model_name}'"))];
-
+            let mut request_builder =
+                ureq::get(&url).query("filter", format!("name='{model_name}'"));
             if let Some(token) = &page_token {
-                query_params.push(("page_token", token.clone()));
+                request_builder = request_builder.query("page_token", token);
             }
 
-            let response = self.client.get(&url).query(&query_params).send().await?;
-
-            match response.json::<ModelVersionSearchResult>().await {
+            match request_builder
+                .call()?
+                .body_mut()
+                .read_json::<ModelVersionSearchResult>()
+            {
                 Ok(result) => {
                     versions.extend(result.model_versions);
                     page_token = result.next_page_token;
@@ -101,17 +99,21 @@ impl MlflowClient {
         Ok(())
     }
 
-    pub async fn get_version_by_alias(&self, model_name: &str, alias: &str) -> Result<()> {
+    pub fn get_version_by_alias(&self, model_name: &str, alias: &str) -> Result<()> {
         let url = format!(
             "{}/api/2.0/mlflow/registered-models/alias",
             self.tracking_uri
         );
 
-        let query_params = vec![("name", &model_name), ("alias", &alias)];
+        let query_builder = ureq::get(&url)
+            .query("name", &model_name)
+            .query("alias", &alias);
 
-        let response = self.client.get(&url).query(&query_params).send().await?;
-
-        match response.json::<ModelVersionByAliasResult>().await {
+        match query_builder
+            .call()?
+            .body_mut()
+            .read_json::<ModelVersionByAliasResult>()
+        {
             Ok(result) => {
                 let version = result.model_version;
                 println!("{}/{}\t{}", version.name, version.version, version.source);
