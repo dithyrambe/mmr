@@ -38,8 +38,8 @@ impl MlflowClient {
         loop {
             let mut query_params = vec![("filter", format!("name LIKE '{sql_pattern}'"))];
 
-            if let Some(token) = &page_token {
-                query_params.push(("page_token", token.clone()));
+            if let Some(token) = page_token {
+                query_params.push(("page_token", token));
             }
 
             let response = self.client.get(&url).query(&query_params).send().await?;
@@ -74,8 +74,8 @@ impl MlflowClient {
         loop {
             let mut query_params = vec![("filter", format!("name='{model_name}'"))];
 
-            if let Some(token) = &page_token {
-                query_params.push(("page_token", token.clone()));
+            if let Some(token) = page_token {
+                query_params.push(("page_token", token));
             }
 
             let response = self.client.get(&url).query(&query_params).send().await?;
