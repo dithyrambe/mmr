@@ -15,7 +15,7 @@ struct Args {
 
 #[derive(Subcommand, Debug, Clone)]
 enum Commands {
-    #[command(about = "List registered models")]
+    #[command(alias = "ls", about = "List registered models")]
     ListModels {
         #[arg(default_value_t = String::from(""))]
         pattern: String,
